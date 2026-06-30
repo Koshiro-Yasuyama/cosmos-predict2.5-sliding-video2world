@@ -949,7 +949,7 @@ def prepare_windows_and_manifest(args: argparse.Namespace) -> Path:
         schedule=args.window_schedule,
     )
     if not window_plans:
-        raise SystemExit("No windows were produced. Check --start-frame, --stop-frame, and --max-windows.")
+        raise SystemExit("No windows were produced. Check --start-frame, --stop-frame, --num-generated-frames, and --max-windows.")
 
     target_index = target_index_for_conditioning(args.cond_frames, args.future_offset, args.target_index)
     max_target_index = max(
