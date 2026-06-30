@@ -127,7 +127,8 @@ Prediction schedule:
 | `--window-schedule warmup5` | Uses `1`, `1-2`, `1-3`, `1-4`, `1-5`, then `2-6`, `3-7`, ... as conditioning windows. |
 | `--future-offset 9` | Predicts the frame 9 frames after the last real conditioning frame. For the first source frame, this targets absolute frame 10. |
 | `--stride 1` | Moves the conditioning window by one input frame for each output frame. This is the default. |
-| `--max-windows N` | Limits the number of generated output frames. Useful for runtime tests. |
+| `--num-generated-frames N` | Generates exactly N final prediction frames. Use this for normal output length control. |
+| `--max-windows N` | Older/testing name for the same desired window count. Prefer `--num-generated-frames`. |
 
 Frame rate and output:
 
@@ -139,11 +140,13 @@ Frame rate and output:
 
 The command above generates one output frame for each selected input window. A
 30 FPS, 20 second input has about 600 frames, so with `--stride 1` and no
-`--max-windows`, expect about 600 Cosmos generations.
+`--num-generated-frames`, expect about 600 Cosmos generations. Add
+`--num-generated-frames 300` to stop after 300 final prediction frames, for
+example.
 
 ## Trial Run
 
-Before running a full 20-second video, estimate runtime with a small subset:
+Before running a full 20-second video, estimate runtime with a small subset. This example generates exactly 32 final prediction frames:
 
 ```bash
 python examples/sliding_video2world_future.py \
@@ -161,7 +164,7 @@ python examples/sliding_video2world_future.py \
   --future-offset 9 \
   --fps 30 \
   --output-fps 30 \
-  --max-windows 32
+  --num-generated-frames 32
 ```
 
 If a single 14B replica fits on one H200 and throughput is more important than
@@ -183,7 +186,7 @@ python examples/sliding_video2world_future.py \
   --future-offset 9 \
   --fps 30 \
   --output-fps 30 \
-  --max-windows 32
+  --num-generated-frames 32
 ```
 
 Keep whichever mode is faster and stable on the server.
