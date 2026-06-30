@@ -46,4 +46,34 @@ docker run -it --runtime=nvidia --ipc=host --rm \
   "$image_tag"
 ```
 
-See `RUN_SLIDING_VIDEO2WORLD.md` for the full command.
+## Quick Run
+
+Put files in the installed Cosmos repository:
+
+```text
+local_runs/inputs/input.mp4
+local_runs/prompts/input.txt
+```
+
+Inside the Docker container:
+
+```bash
+cd /workspace
+python examples/sliding_video2world_future.py \
+  --repo-root /workspace \
+  --input-video /workspace/local_runs/inputs/input.mp4 \
+  --output-video /workspace/local_runs/outputs/input_future_14b.mp4 \
+  --work-dir /workspace/local_runs/work/input_future_14b \
+  --prompt-file /workspace/local_runs/prompts/input.txt \
+  --model 14B/post-trained \
+  --num-gpus 8 \
+  --parallelism context \
+  --memory-profile speed \
+  --turbo-profile exact \
+  --window-schedule warmup5 \
+  --future-offset 9 \
+  --fps 30 \
+  --output-fps 30
+```
+
+See `RUN_SLIDING_VIDEO2WORLD.md` for argument details and trial commands.
