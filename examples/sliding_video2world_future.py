@@ -1238,6 +1238,54 @@ def configure_torch_runtime(*, use_tf32: bool) -> None:
             pass
 
 
+def install_fsdp_safe_text_encoder_patch() -> None:
+    """Avoid moving FSDP-managed text encoders with Module.to().
+
+    Cosmos-Predict2.5's TextEncoder.compute_text_embeddings_online calls
+    ``self.model = self.model.to(self.device)`` before every embedding pass.
+    That is fine for a normal module, but it can collide with FSDP/context
+    parallel ownership. The runner only needs the text encoder to execute on
+    its current managed device, so in distributed runs we temporarily make that
+    one ``.to(self.device)`` call a no-op and leave all other behavior intact.
+    """
+    try:
+        import torch
+        from cosmos_predict2._src.predict2.text_encoders.text_encoder import TextEncoder
+    except Exception as exc:
+        if rank0():
+            eprint(f"Warning: could not install FSDP-safe text encoder patch: {exc}")
+        return
+
+    if getattr(TextEncoder, "_cosmos_sliding_fsdp_safe_patch", False):
+        return
+
+    original = TextEncoder.compute_text_embeddings_online
+
+    def patched_compute_text_embeddings_online(self, *args, **kwargs):
+        use_noop_to = bool(torch.distributed.is_available() and torch.distributed.is_initialized())
+        model = getattr(self, "model", None)
+        if not use_noop_to or model is None or not hasattr(model, "to"):
+            return original(self, *args, **kwargs)
+
+        original_to = model.to
+
+        def noop_to(*to_args, **to_kwargs):
+            if to_args == (getattr(self, "device", None),) and not to_kwargs:
+                return model
+            return original_to(*to_args, **to_kwargs)
+
+        model.to = noop_to
+        try:
+            return original(self, *args, **kwargs)
+        finally:
+            model.to = original_to
+
+    TextEncoder.compute_text_embeddings_online = patched_compute_text_embeddings_online
+    TextEncoder._cosmos_sliding_fsdp_safe_patch = True
+    if rank0():
+        eprint("Installed FSDP-safe text encoder patch for sliding Video2World runner.")
+
+
 def _tree_map_tensors(obj: Any, fn: Any) -> Any:
     import torch
 
@@ -1663,6 +1711,7 @@ def run_official_cosmos_worker(manifest_path: Path) -> None:
     sys.path.insert(0, str(repo_root))
 
     configure_torch_runtime(use_tf32=manifest.use_tf32)
+    install_fsdp_safe_text_encoder_patch()
 
     from cosmos_oss.init import cleanup_environment, init_environment, init_output_dir
     from cosmos_predict2.config import InferenceArguments, SetupArguments
