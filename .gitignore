@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+
+local_runs/inputs/*
+local_runs/prompts/*
+local_runs/outputs/*
+local_runs/work/*
+!local_runs/inputs/.gitkeep
+!local_runs/prompts/.gitkeep
+!local_runs/outputs/.gitkeep
+!local_runs/work/.gitkeep
