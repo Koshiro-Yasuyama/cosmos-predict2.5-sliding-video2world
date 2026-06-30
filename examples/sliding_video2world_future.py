@@ -2071,7 +2071,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--target-index", type=int, default=None, help="Generated-clip frame index override. Default: effective_cond_frames + future_offset - 1 per window.")
     p.add_argument("--start-frame", type=int, default=0, help="First source frame index. Default: 0.")
     p.add_argument("--stop-frame", type=int, default=None, help="Exclusive source stop frame. Default: end of video.")
-    p.add_argument("--max-windows", type=int, default=None, help="Limit desired windows for testing.")
+    p.add_argument("--max-windows", type=int, default=None, help="Limit desired windows for testing. Prefer --num-generated-frames for normal use.")
+    p.add_argument("--num-generated-frames", type=int, default=None, help="Final number of predicted frames to generate. Alias for the desired window count.")
     p.add_argument("--aggregation", choices=["target_frame", "generated_tail"], default="target_frame")
     p.add_argument("--on-short-output", choices=["error", "last", "skip"], default="error")
 
@@ -2143,6 +2144,14 @@ def validate_parent_args(args: argparse.Namespace) -> None:
         raise SystemExit("--output-video is required")
     if args.num_gpus < 1:
         raise SystemExit("--num-gpus must be >= 1")
+    if args.num_generated_frames is not None:
+        if args.num_generated_frames < 1:
+            raise SystemExit("--num-generated-frames must be >= 1")
+        if args.max_windows is not None and args.max_windows != args.num_generated_frames:
+            raise SystemExit("Use either --num-generated-frames or --max-windows, or set both to the same value.")
+        args.max_windows = args.num_generated_frames
+    if args.max_windows is not None and args.max_windows < 1:
+        raise SystemExit("--max-windows must be >= 1")
     if args.guidance < 0 or args.guidance > 7:
         raise SystemExit("--guidance must be in [0, 7]")
     if args.temporal_compression_factor < 1:
