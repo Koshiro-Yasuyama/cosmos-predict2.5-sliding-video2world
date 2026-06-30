@@ -76,4 +76,10 @@ python examples/sliding_video2world_future.py \
   --output-fps 30
 ```
 
+To generate a fixed number of final prediction frames, add for example:
+
+```bash
+--num-generated-frames 300
+```
+
 See `RUN_SLIDING_VIDEO2WORLD.md` for argument details and trial commands.
